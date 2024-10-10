@@ -1,3 +1,7 @@
+// Package client implements an HTTP client for the MicroStrategy REST API.
+//
+// The client provides methods for interacting with the MicroStrategy REST API, handles authentication,
+// and where appropriate returns strongly typed responses.
 package client
 
 import (
@@ -20,6 +24,7 @@ type MstrRestClient struct {
 	BaseURL        string
 }
 
+// NewMstrRestClient creates a new MstrRestClient with the given authentication and base URL.
 func NewMstrRestClient(auth types.MstrAuthentication, baseURL string) *MstrRestClient {
 	client := &MstrRestClient{
 		Authentication: auth,
@@ -35,10 +40,12 @@ func NewMstrRestClient(auth types.MstrAuthentication, baseURL string) *MstrRestC
 	return client
 }
 
+// NewAnonymousMstrRestClient creates a new MstrRestClient with anonymous authentication and the given base URL.
 func NewAnonymousMstrRestClient(baseURL string) *MstrRestClient {
 	return NewMstrRestClient(&types.AnonymousAuthentication{}, baseURL)
 }
 
+// NewStandardMstrRestClient creates a new MstrRestClient with standard authentication and the given username, password, and base URL.
 func NewStandardMstrRestClient(username, password, baseURL string) *MstrRestClient {
 	return NewMstrRestClient(&types.StandardAuthentication{Username: username, Password: password}, baseURL)
 }
@@ -58,6 +65,7 @@ func (c *MstrRestClient) composeURL(apiPath string, queryParams *map[string]stri
 	return &pth, nil
 }
 
+// CreateAPIRequest creates an HTTP request for the given method, API path, query parameters, and body.
 func (c *MstrRestClient) CreateAPIRequest(ctx context.Context, method string, apiPath string, queryParams *map[string]string, body interface{}) (*http.Request, error) {
 	url, urlErr := c.composeURL(apiPath, queryParams)
 	if urlErr != nil {
@@ -96,6 +104,7 @@ func (c *MstrRestClient) CreateAPIRequest(ctx context.Context, method string, ap
 	return req, nil
 }
 
+// DoAPIRequest performs an API request with the given method, API path, body, query parameters, and parsed response.
 func (c *MstrRestClient) DoAPIRequest(ctx context.Context, method string, apiPath string, body interface{}, queryParams *map[string]string, parsedResponse interface{}) (*http.Response, error) {
 	req, reqErr := c.CreateAPIRequest(ctx, method, apiPath, queryParams, body)
 	if reqErr != nil {
@@ -120,12 +129,14 @@ func (c *MstrRestClient) DoAPIRequest(ctx context.Context, method string, apiPat
 	return resp, nil
 }
 
+// ParseMicroStrategyError parses a MicroStrategy REST API error from the given response.
 func ParseMicroStrategyError(resp *http.Response) *types.MstrRestError {
 	var err types.MstrRestError
 	json.NewDecoder(resp.Body).Decode(&err)
 	return &err
 }
 
+// LoggedIn returns true if the client is logged in.
 func (c *MstrRestClient) LoggedIn() bool {
 	return c.AuthToken != nil
 }
