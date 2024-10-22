@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -41,5 +42,78 @@ func (c *MstrRestClient) Logout(ctx context.Context) error {
 	} else {
 		c.AuthToken = nil
 		return nil
+	}
+}
+
+// Implement API token request
+func (c *MstrRestClient) CreateAPIToken(ctx context.Context, userID string) (*string, error) {
+	body := map[string]string{
+		"userId": userID,
+	}
+	var respBody map[string]string
+	resp, respErr := c.DoAPIRequest(ctx, http.MethodPost, "/auth/apiTokens", body, nil, respBody)
+	if respErr != nil {
+		return nil, fmt.Errorf("couldn't create API token: %v", respErr)
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("couldn't create API token: %v", resp.Status)
+	} else {
+		token := respBody["apiToken"]
+		return &token, nil
+	}
+}
+
+// Delegate session
+func (c *MstrRestClient) DelegateSession(ctx context.Context, identityToken string, codeVerifier *string) error {
+	body := map[string]interface{}{
+		"loginMode":     -1,
+		"identityToken": identityToken,
+	}
+	if codeVerifier != nil {
+		body["codeVerifier"] = *codeVerifier
+	}
+	resp, respErr := c.DoAPIRequest(ctx, http.MethodPost, "/auth/delegate", body, nil, nil)
+	if respErr != nil {
+		return fmt.Errorf("couldn't delegate session: %v", respErr)
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("couldn't delegate session: %v", resp.Status)
+	} else {
+		newToken := resp.Header.Get("X-MSTR-AuthToken")
+		c.AuthToken = &newToken
+		return nil
+	}
+}
+
+// validate identity token
+func (c *MstrRestClient) ValidateIdentityToken(ctx context.Context, identityToken string, codeVerifier *string) (*string, error) {
+
+	var queryParams *map[string]string
+	if codeVerifier != nil {
+		queryParams = &map[string]string{
+			"codeVerifier": *codeVerifier,
+		}
+	}
+	request, reqErr := c.CreateAPIRequest(ctx, http.MethodPost, "/auth/identityToken", queryParams, nil)
+	if reqErr != nil {
+		return nil, fmt.Errorf("couldn't validate identity token: %v", reqErr)
+	}
+	request.Header.Set("X-MSTR-IdentityToken", identityToken)
+	resp, respErr := c.Client.Do(request)
+	if respErr != nil {
+		return nil, fmt.Errorf("couldn't validate identity token: %v", respErr)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("couldn't validate identity token: %v", resp.Status)
+	} else {
+		// parse response body from json to manp[string]string
+		var respBody map[string]string
+		decoder := json.NewDecoder(resp.Body)
+		decodeErr := decoder.Decode(&respBody)
+		if decodeErr != nil {
+			return nil, fmt.Errorf("couldn't validate identity token: %v", decodeErr)
+		}
+		userID := respBody["userId"]
+		return &userID, nil
 	}
 }
