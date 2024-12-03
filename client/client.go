@@ -19,17 +19,24 @@ import (
 
 type MstrRestClient struct {
 	http.Client
-	AuthToken      *string
-	Authentication types.MstrAuthentication
-	BaseURL        string
+	AuthToken       *string
+	Authentication  types.MstrAuthentication
+	BaseURL         string
+	ApplicationType *types.MstrApplicationType
 }
 
 // NewMstrRestClient creates a new MstrRestClient with the given authentication and base URL.
-func NewMstrRestClient(auth types.MstrAuthentication, baseURL string) *MstrRestClient {
+func NewMstrRestClient(auth types.MstrAuthentication, baseURL string, configs ...func(*types.ClientConfig)) *MstrRestClient {
+	config := types.ClientConfig{}
+	for _, cfgFunc := range configs {
+		cfgFunc(&config)
+	}
 	client := &MstrRestClient{
 		Authentication: auth,
 		BaseURL:        baseURL,
 	}
+
+	client.ApplicationType = &config.ApplicationType
 
 	jar, cookieJarErr := cookiejar.New(nil)
 	if cookieJarErr != nil {
@@ -41,13 +48,13 @@ func NewMstrRestClient(auth types.MstrAuthentication, baseURL string) *MstrRestC
 }
 
 // NewAnonymousMstrRestClient creates a new MstrRestClient with anonymous authentication and the given base URL.
-func NewAnonymousMstrRestClient(baseURL string) *MstrRestClient {
-	return NewMstrRestClient(&types.AnonymousAuthentication{}, baseURL)
+func NewAnonymousMstrRestClient(baseURL string, configs ...func(*types.ClientConfig)) *MstrRestClient {
+	return NewMstrRestClient(&types.AnonymousAuthentication{}, baseURL, configs...)
 }
 
 // NewStandardMstrRestClient creates a new MstrRestClient with standard authentication and the given username, password, and base URL.
-func NewStandardMstrRestClient(username, password, baseURL string) *MstrRestClient {
-	return NewMstrRestClient(&types.StandardAuthentication{Username: username, Password: password}, baseURL)
+func NewStandardMstrRestClient(username, password, baseURL string, configs ...func(*types.ClientConfig)) *MstrRestClient {
+	return NewMstrRestClient(&types.StandardAuthentication{Username: username, Password: password}, baseURL, configs...)
 }
 
 func (c *MstrRestClient) composeURL(apiPath string, queryParams *map[string]string) (*string, error) {
@@ -105,8 +112,8 @@ func (c *MstrRestClient) CreateAPIRequest(ctx context.Context, method string, ap
 }
 
 // DoAPIRequest performs an API request with the given method, API path, body, query parameters, and parsed response.
-func (c *MstrRestClient) DoAPIRequest(ctx context.Context, method string, apiPath string, body interface{}, queryParams *map[string]string, parsedResponse interface{}) (*http.Response, error) {
-	req, reqErr := c.CreateAPIRequest(ctx, method, apiPath, queryParams, body)
+func (c *MstrRestClient) DoAPIRequest(ctx context.Context, requestOptions types.APIRequestInput) (*http.Response, error) {
+	req, reqErr := c.CreateAPIRequest(ctx, requestOptions.Method, requestOptions.APIPath, requestOptions.QueryParams, requestOptions.Body)
 	if reqErr != nil {
 		return nil, reqErr
 	}
@@ -120,8 +127,8 @@ func (c *MstrRestClient) DoAPIRequest(ctx context.Context, method string, apiPat
 		defer resp.Body.Close()
 		return resp, ParseMicroStrategyError(resp)
 	}
-	if parsedResponse != nil {
-		parseErr := json.NewDecoder(resp.Body).Decode(parsedResponse)
+	if requestOptions.ResponseJSON != nil {
+		parseErr := json.NewDecoder(resp.Body).Decode(requestOptions.ResponseJSON)
 		if parseErr != nil {
 			return resp, parseErr
 		}

@@ -15,7 +15,11 @@ func (c *MstrRestClient) GetDataSources(ctx context.Context) ([]types.MstrRestDa
 	var response struct {
 		Datasources []types.MstrRestDataSource `json:"datasources"`
 	}
-	_, err := c.DoAPIRequest(ctx, http.MethodGet, "/datasources", nil, nil, &response)
+	_, err := c.DoAPIRequest(ctx, types.APIRequestInput{
+		Method:       http.MethodGet,
+		APIPath:      "/datasources",
+		ResponseJSON: &response,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +32,11 @@ func (c *MstrRestClient) GetDataSource(ctx context.Context, id string) (*types.M
 	}
 	var datasource types.MstrRestDataSource
 
-	_, err := c.DoAPIRequest(ctx, http.MethodGet, fmt.Sprintf("/datasources/%s", id), nil, nil, &datasource)
+	_, err := c.DoAPIRequest(ctx, types.APIRequestInput{
+		Method:       http.MethodGet,
+		APIPath:      fmt.Sprintf("/datasources/%s", id),
+		ResponseJSON: &datasource,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +47,10 @@ func (c *MstrRestClient) DeleteDataSource(ctx context.Context, id string) error 
 	if !c.LoggedIn() {
 		return fmt.Errorf("not logged in")
 	}
-	resp, err := c.DoAPIRequest(ctx, http.MethodDelete, fmt.Sprintf("/datasources/%s", id), nil, nil, nil)
+	resp, err := c.DoAPIRequest(ctx, types.APIRequestInput{
+		Method:  http.MethodDelete,
+		APIPath: fmt.Sprintf("/datasources/%s", id),
+	})
 	if err != nil {
 		return err
 	}
@@ -56,7 +67,12 @@ func (c *MstrRestClient) CreateDataSource(ctx context.Context, datasource types.
 	var response struct {
 		DataSource types.MstrRestDataSource `json:"datasource"`
 	}
-	_, err := c.DoAPIRequest(ctx, http.MethodPost, "/datasources", datasource, nil, &response)
+	_, err := c.DoAPIRequest(ctx, types.APIRequestInput{
+		Method:       http.MethodPost,
+		APIPath:      "/datasources",
+		Body:         datasource,
+		ResponseJSON: &response,
+	})
 	if err != nil {
 		return nil, err
 	}

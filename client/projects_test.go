@@ -15,7 +15,7 @@ var baseURL = os.Getenv("MSTR_BASEURL")
 
 func TestProjects(t *testing.T) {
 	client := client.NewAnonymousMstrRestClient("https://demo.microstrategy.com/MicroStrategyLibrary/api/")
-	client.Login(context.Background(), nil)
+	client.Login(context.Background())
 	projects, err := client.GetProjects(context.Background())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -28,7 +28,7 @@ func TestProjects(t *testing.T) {
 func TestProjectSettings(t *testing.T) {
 	// client := NewAnonymousMstrRestClient("https://demo.microstrategy.com/MicroStrategyLibrary/api/")
 	client := client.NewStandardMstrRestClient(username, password, baseURL)
-	client.Login(context.Background(), nil)
+	client.Login(context.Background())
 	projects, err := client.GetProjects(context.Background())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)

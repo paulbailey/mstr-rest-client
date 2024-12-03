@@ -91,3 +91,15 @@ type MstrOwner struct {
 	MstrObject
 	Expired bool `json:"expired"`
 }
+
+type ClientConfig struct {
+	ApplicationType MstrApplicationType
+}
+
+type APIRequestInput struct {
+	Method       string
+	APIPath      string
+	QueryParams  *map[string]string
+	Body         interface{}
+	ResponseJSON interface{}
+}

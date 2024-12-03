@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/paulbailey/mstr-rest-client/client"
-	"github.com/paulbailey/mstr-rest-client/types"
 )
 
 func TestAnonymousLogin(t *testing.T) {
@@ -22,8 +21,7 @@ func TestAnonymousLogin(t *testing.T) {
 	defer ts.Close()
 
 	client := client.NewAnonymousMstrRestClient(ts.URL)
-	custom := types.CustomApp
-	err := client.Login(context.Background(), &custom)
+	err := client.Login(context.Background())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -34,8 +32,7 @@ func TestAnonymousLogin(t *testing.T) {
 
 func TestLogout(t *testing.T) {
 	client := client.NewAnonymousMstrRestClient("https://demo.microstrategy.com/MicroStrategyLibrary/api")
-	custom := types.CustomApp
-	client.Login(context.Background(), &custom)
+	client.Login(context.Background())
 	err := client.Logout(context.Background())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)

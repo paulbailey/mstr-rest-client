@@ -13,12 +13,16 @@ func (c *MstrRestClient) Authenticate() error {
 	return nil
 }
 
-func (c *MstrRestClient) Login(ctx context.Context, applicationType *types.MstrApplicationType) error {
+func (c *MstrRestClient) Login(ctx context.Context) error {
 	if c.Authentication == nil {
 		return fmt.Errorf("no authentication method set")
 	}
-	authReq := c.Authentication.AuthenticationRequest(applicationType)
-	resp, respErr := c.DoAPIRequest(ctx, http.MethodPost, "/auth/login", authReq, nil, nil)
+	authReq := c.Authentication.AuthenticationRequest(c.ApplicationType)
+	resp, respErr := c.DoAPIRequest(ctx, types.APIRequestInput{
+		Method:  http.MethodPost,
+		APIPath: "/auth/login",
+		Body:    authReq,
+	})
 	if respErr != nil {
 		return fmt.Errorf("couldn't login: %v", respErr)
 	}
@@ -33,7 +37,9 @@ func (c *MstrRestClient) Login(ctx context.Context, applicationType *types.MstrA
 }
 
 func (c *MstrRestClient) Logout(ctx context.Context) error {
-	resp, respErr := c.DoAPIRequest(ctx, http.MethodPost, "/auth/logout", nil, nil, nil)
+	resp, respErr := c.DoAPIRequest(ctx, types.APIRequestInput{
+		Method:  http.MethodPost,
+		APIPath: "/auth/logout"})
 	if respErr != nil {
 		return fmt.Errorf("couldn't logout: %v", respErr)
 	}
@@ -51,7 +57,12 @@ func (c *MstrRestClient) CreateAPIToken(ctx context.Context, userID string) (*st
 		"userId": userID,
 	}
 	var respBody map[string]string
-	resp, respErr := c.DoAPIRequest(ctx, http.MethodPost, "/auth/apiTokens", body, nil, respBody)
+	resp, respErr := c.DoAPIRequest(ctx, types.APIRequestInput{
+		Method:       http.MethodPost,
+		APIPath:      "/auth/apiTokens",
+		Body:         body,
+		ResponseJSON: &respBody,
+	})
 	if respErr != nil {
 		return nil, fmt.Errorf("couldn't create API token: %v", respErr)
 	}
@@ -72,7 +83,11 @@ func (c *MstrRestClient) DelegateSession(ctx context.Context, identityToken stri
 	if codeVerifier != nil {
 		body["codeVerifier"] = *codeVerifier
 	}
-	resp, respErr := c.DoAPIRequest(ctx, http.MethodPost, "/auth/delegate", body, nil, nil)
+	resp, respErr := c.DoAPIRequest(ctx, types.APIRequestInput{
+		Method:  http.MethodPost,
+		APIPath: "/auth/delegate",
+		Body:    body,
+	})
 	if respErr != nil {
 		return fmt.Errorf("couldn't delegate session: %v", respErr)
 	}
