@@ -8,12 +8,14 @@ import (
 	"github.com/paulbailey/mstr-rest-client/types"
 )
 
-func (c *MstrRestClient) GetProjects(ctx context.Context) ([]types.MstrProject, error) {
-	if !c.LoggedIn() {
+type ProjectService service
+
+func (c *ProjectService) GetProjects(ctx context.Context) ([]types.MstrProject, error) {
+	if !c.client.LoggedIn() {
 		return nil, fmt.Errorf("not logged in")
 	}
 	var projects []types.MstrProject
-	_, err := c.DoAPIRequest(ctx, types.APIRequestInput{
+	_, err := c.client.DoAPIRequest(ctx, types.APIRequestInput{
 		Method:       http.MethodGet,
 		APIPath:      "/projects/",
 		ResponseJSON: &projects,
@@ -24,12 +26,12 @@ func (c *MstrRestClient) GetProjects(ctx context.Context) ([]types.MstrProject, 
 	return projects, nil
 }
 
-func (c *MstrRestClient) GetProject(ctx context.Context, id string) (*types.MstrProject, error) {
-	if !c.LoggedIn() {
+func (c *ProjectService) GetProject(ctx context.Context, id string) (*types.MstrProject, error) {
+	if !c.client.LoggedIn() {
 		return nil, fmt.Errorf("not logged in")
 	}
 	var project types.MstrProject
-	_, err := c.DoAPIRequest(ctx, types.APIRequestInput{
+	_, err := c.client.DoAPIRequest(ctx, types.APIRequestInput{
 		Method:       http.MethodGet,
 		APIPath:      fmt.Sprintf("/projects/%s", id),
 		ResponseJSON: &project,
@@ -40,12 +42,12 @@ func (c *MstrRestClient) GetProject(ctx context.Context, id string) (*types.Mstr
 	return &project, nil
 }
 
-func (c *MstrRestClient) GetProjectSettings(ctx context.Context, id string) (types.MstrProjectSettings, error) {
-	if !c.LoggedIn() {
+func (c *ProjectService) GetProjectSettings(ctx context.Context, id string) (types.MstrProjectSettings, error) {
+	if !c.client.LoggedIn() {
 		return nil, fmt.Errorf("not logged in")
 	}
 	var settings types.MstrProjectSettings
-	_, err := c.DoAPIRequest(ctx, types.APIRequestInput{
+	_, err := c.client.DoAPIRequest(ctx, types.APIRequestInput{
 		Method:       http.MethodGet,
 		APIPath:      fmt.Sprintf("/v2/projects/%s/settings", id),
 		ResponseJSON: &settings,
@@ -56,11 +58,11 @@ func (c *MstrRestClient) GetProjectSettings(ctx context.Context, id string) (typ
 	return settings, nil
 }
 
-func (c *MstrRestClient) SetProjectSettings(ctx context.Context, id string, settings types.MstrProjectSettings) error {
-	if !c.LoggedIn() {
+func (c *ProjectService) SetProjectSettings(ctx context.Context, id string, settings types.MstrProjectSettings) error {
+	if !c.client.LoggedIn() {
 		return fmt.Errorf("not logged in")
 	}
-	resp, err := c.DoAPIRequest(ctx, types.APIRequestInput{
+	resp, err := c.client.DoAPIRequest(ctx, types.APIRequestInput{
 		Method:  http.MethodPatch,
 		APIPath: fmt.Sprintf("/v2/projects/%s/settings", id),
 		Body:    settings,
