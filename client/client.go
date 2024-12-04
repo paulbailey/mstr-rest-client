@@ -24,8 +24,9 @@ type MstrRestClient struct {
 	BaseURL         string
 	ApplicationType *types.MstrApplicationType
 
-	shared service
-	Auth   *AuthService
+	shared     service
+	Auth       *AuthService
+	DataSource *DataSourceService
 }
 
 // NewMstrRestClient creates a new MstrRestClient with the given authentication and base URL.
@@ -157,6 +158,7 @@ func (c *MstrRestClient) LoggedIn() bool {
 func (c *MstrRestClient) initialise() {
 	c.shared.client = c
 	c.Auth = (*AuthService)(&c.shared)
+	c.DataSource = (*DataSourceService)(&c.shared)
 }
 
 func (c *MstrRestClient) Login(ctx context.Context) error {

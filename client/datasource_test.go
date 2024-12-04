@@ -11,7 +11,7 @@ import (
 func TestDataSourceList(t *testing.T) {
 	client := client.NewStandardMstrRestClient(username, password, baseURL)
 	client.Login(context.Background())
-	datasources, err := client.GetDataSources(context.Background())
+	datasources, err := client.DataSource.GetDataSources(context.Background())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
