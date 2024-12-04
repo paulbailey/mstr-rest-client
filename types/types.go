@@ -93,7 +93,7 @@ type MstrOwner struct {
 }
 
 type ClientConfig struct {
-	ApplicationType MstrApplicationType
+	ApplicationType *MstrApplicationType
 }
 
 type APIRequestInput struct {

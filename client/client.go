@@ -23,11 +23,16 @@ type MstrRestClient struct {
 	Authentication  types.MstrAuthentication
 	BaseURL         string
 	ApplicationType *types.MstrApplicationType
+
+	shared service
+	Auth   *AuthService
 }
 
 // NewMstrRestClient creates a new MstrRestClient with the given authentication and base URL.
 func NewMstrRestClient(auth types.MstrAuthentication, baseURL string, configs ...func(*types.ClientConfig)) *MstrRestClient {
-	config := types.ClientConfig{}
+	config := types.ClientConfig{
+		ApplicationType: nil,
+	}
 	for _, cfgFunc := range configs {
 		cfgFunc(&config)
 	}
@@ -36,13 +41,15 @@ func NewMstrRestClient(auth types.MstrAuthentication, baseURL string, configs ..
 		BaseURL:        baseURL,
 	}
 
-	client.ApplicationType = &config.ApplicationType
+	client.ApplicationType = config.ApplicationType
 
 	jar, cookieJarErr := cookiejar.New(nil)
 	if cookieJarErr != nil {
 		panic(cookieJarErr)
 	}
 	client.Jar = jar
+
+	client.initialise()
 
 	return client
 }
@@ -119,7 +126,6 @@ func (c *MstrRestClient) DoAPIRequest(ctx context.Context, requestOptions types.
 	}
 	slog.Debug("Request", slog.String("method", req.Method), slog.Any("url", req.URL))
 	resp, err := c.Do(req)
-	slog.Debug("Response:", slog.String("responseCode", resp.Status))
 	if err != nil {
 		return resp, err
 	}
@@ -146,4 +152,21 @@ func ParseMicroStrategyError(resp *http.Response) *types.MstrRestError {
 // LoggedIn returns true if the client is logged in.
 func (c *MstrRestClient) LoggedIn() bool {
 	return c.AuthToken != nil
+}
+
+func (c *MstrRestClient) initialise() {
+	c.shared.client = c
+	c.Auth = (*AuthService)(&c.shared)
+}
+
+func (c *MstrRestClient) Login(ctx context.Context) error {
+	return c.Auth.Login(ctx)
+}
+
+func (c *MstrRestClient) Logout(ctx context.Context) error {
+	return c.Auth.Logout(ctx)
+}
+
+type service struct {
+	client *MstrRestClient
 }

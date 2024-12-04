@@ -32,7 +32,10 @@ func TestAnonymousLogin(t *testing.T) {
 
 func TestLogout(t *testing.T) {
 	client := client.NewAnonymousMstrRestClient("https://demo.microstrategy.com/MicroStrategyLibrary/api")
-	client.Login(context.Background())
+	loginErr := client.Login(context.Background())
+	if loginErr != nil {
+		t.Errorf("unexpected error: %v", loginErr)
+	}
 	err := client.Logout(context.Background())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)

@@ -9,16 +9,18 @@ import (
 	"github.com/paulbailey/mstr-rest-client/types"
 )
 
-func (c *MstrRestClient) Authenticate() error {
+type AuthService service
+
+func (c *AuthService) Authenticate() error {
 	return nil
 }
 
-func (c *MstrRestClient) Login(ctx context.Context) error {
-	if c.Authentication == nil {
+func (c *AuthService) Login(ctx context.Context) error {
+	if c.client.Authentication == nil {
 		return fmt.Errorf("no authentication method set")
 	}
-	authReq := c.Authentication.AuthenticationRequest(c.ApplicationType)
-	resp, respErr := c.DoAPIRequest(ctx, types.APIRequestInput{
+	authReq := c.client.Authentication.AuthenticationRequest(c.client.ApplicationType)
+	resp, respErr := c.client.DoAPIRequest(ctx, types.APIRequestInput{
 		Method:  http.MethodPost,
 		APIPath: "/auth/login",
 		Body:    authReq,
@@ -31,13 +33,13 @@ func (c *MstrRestClient) Login(ctx context.Context) error {
 	} else {
 		// checkov:skip=CKV_SECRET_6: Not a secret
 		token := resp.Header.Get("X-MSTR-AuthToken")
-		c.AuthToken = &token
+		c.client.AuthToken = &token
 	}
 	return nil
 }
 
-func (c *MstrRestClient) Logout(ctx context.Context) error {
-	resp, respErr := c.DoAPIRequest(ctx, types.APIRequestInput{
+func (c *AuthService) Logout(ctx context.Context) error {
+	resp, respErr := c.client.DoAPIRequest(ctx, types.APIRequestInput{
 		Method:  http.MethodPost,
 		APIPath: "/auth/logout"})
 	if respErr != nil {
@@ -46,18 +48,18 @@ func (c *MstrRestClient) Logout(ctx context.Context) error {
 	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("couldn't logout: %v", resp.Status)
 	} else {
-		c.AuthToken = nil
+		c.client.AuthToken = nil
 		return nil
 	}
 }
 
 // Implement API token request
-func (c *MstrRestClient) CreateAPIToken(ctx context.Context, userID string) (*string, error) {
+func (c *AuthService) CreateAPIToken(ctx context.Context, userID string) (*string, error) {
 	body := map[string]string{
 		"userId": userID,
 	}
 	var respBody map[string]string
-	resp, respErr := c.DoAPIRequest(ctx, types.APIRequestInput{
+	resp, respErr := c.client.DoAPIRequest(ctx, types.APIRequestInput{
 		Method:       http.MethodPost,
 		APIPath:      "/auth/apiTokens",
 		Body:         body,
@@ -75,7 +77,7 @@ func (c *MstrRestClient) CreateAPIToken(ctx context.Context, userID string) (*st
 }
 
 // Delegate session
-func (c *MstrRestClient) DelegateSession(ctx context.Context, identityToken string, codeVerifier *string) error {
+func (c *AuthService) DelegateSession(ctx context.Context, identityToken string, codeVerifier *string) error {
 	body := map[string]interface{}{
 		"loginMode":     -1,
 		"identityToken": identityToken,
@@ -83,7 +85,7 @@ func (c *MstrRestClient) DelegateSession(ctx context.Context, identityToken stri
 	if codeVerifier != nil {
 		body["codeVerifier"] = *codeVerifier
 	}
-	resp, respErr := c.DoAPIRequest(ctx, types.APIRequestInput{
+	resp, respErr := c.client.DoAPIRequest(ctx, types.APIRequestInput{
 		Method:  http.MethodPost,
 		APIPath: "/auth/delegate",
 		Body:    body,
@@ -95,13 +97,13 @@ func (c *MstrRestClient) DelegateSession(ctx context.Context, identityToken stri
 		return fmt.Errorf("couldn't delegate session: %v", resp.Status)
 	} else {
 		newToken := resp.Header.Get("X-MSTR-AuthToken")
-		c.AuthToken = &newToken
+		c.client.AuthToken = &newToken
 		return nil
 	}
 }
 
 // validate identity token
-func (c *MstrRestClient) ValidateIdentityToken(ctx context.Context, identityToken string, codeVerifier *string) (*string, error) {
+func (c *AuthService) ValidateIdentityToken(ctx context.Context, identityToken string, codeVerifier *string) (*string, error) {
 
 	var queryParams *map[string]string
 	if codeVerifier != nil {
@@ -109,12 +111,12 @@ func (c *MstrRestClient) ValidateIdentityToken(ctx context.Context, identityToke
 			"codeVerifier": *codeVerifier,
 		}
 	}
-	request, reqErr := c.CreateAPIRequest(ctx, http.MethodPost, "/auth/identityToken", queryParams, nil)
+	request, reqErr := c.client.CreateAPIRequest(ctx, http.MethodPost, "/auth/identityToken", queryParams, nil)
 	if reqErr != nil {
 		return nil, fmt.Errorf("couldn't validate identity token: %v", reqErr)
 	}
 	request.Header.Set("X-MSTR-IdentityToken", identityToken)
-	resp, respErr := c.Client.Do(request)
+	resp, respErr := c.client.Client.Do(request)
 	if respErr != nil {
 		return nil, fmt.Errorf("couldn't validate identity token: %v", respErr)
 	}
